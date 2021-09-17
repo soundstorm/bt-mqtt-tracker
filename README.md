@@ -1,6 +1,6 @@
 # Raspberry Pi Bluetooth Device Tracker and MQTT Client
 
-This is a small script that turns a [Raspberry Pi 3](https://amzn.to/2PmapoY) into a MQTT device tracker for use with Home Assistant (or other IOT) equipment.
+This is a small script that turns a Raspberry Pi with Bluetooth into a MQTT device tracker for use with Home Assistant (or other IOT) equipment.
 
 This is useful if you have a bunch of Pi's around the home anyway, and want to increase the accuracy of the presence detection.
 
