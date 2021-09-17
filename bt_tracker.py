@@ -2,7 +2,7 @@
 #
 #   Bluetooth Device Tracking MQTT Client for Raspberry Pi (or others)
 #
-#   Version:    1.0
+#   Version:    2.0
 #   Status:     Working
 #   Github:     https://github.com/robmarkoski/bt-mqtt-tracker
 #
@@ -31,7 +31,8 @@ MQTT_CLIENT_ID = "bttracker"    # MQTT Client Id
 MQTT_HOST_IP = "127.0.0.1"      # MQTT HOST
 MQTT_PORT = 1883                # MQTT PORT (DEFAULT 1883)
 
-
+# Bluetooth and interval settings
+USE_BLE = True  # Use Bluetooth LE to discover devices
 SCAN_TIME = 30  # Interval Between Scans
 BLU_TIMEOUT = 3 # How long during scan before there is a timeout.
 
@@ -41,7 +42,7 @@ LOG_LEVEL = logging.NOTSET       # Change to DEBUG for debugging. INFO For basic
 
 
 # SHOULDNT NEED TO CHANGE BELOW
-VERSION = "1.0"
+VERSION = "2.0"
 LOG_FORMAT = "%(asctime)-15s %(message)s"
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__)) + "/"
 LOG_FILE = SCRIPT_DIR + LOG_NAME
@@ -49,6 +50,10 @@ logging.basicConfig(filename=LOG_FILE,
                     level=LOG_LEVEL,
                     format=LOG_FORMAT,
                     datefmt='%Y-%m-%d %H:%M:%S')
+
+if USE_BLE:
+    from bluetooth.ble import DiscoveryService
+    ble_service = DiscoveryService()
 
 client = mqtt.Client("bt_mqtt_tracker_%s" % (LOCATION,))
 client.username_pw_set(MQTT_USER, MQTT_PASS)
@@ -68,13 +73,23 @@ for device in devices:
 logging.info("Set Tracker as available")
 client.publish("bt_mqtt_tracker/available/%s" % (LOCATION,), "online", retain=True)
 
+
 try:
     logging.info("Starting BLE Tracker Server")
     while True:
+        if USE_BLE:
+            ble_devices = ble_service.discover(BLU_TIMEOUT)
         for device in devices:
-            mac = device['mac']
+            mac = device['mac'].upper()
             logging.debug("Checking for {}".format(mac))
-            result = bluetooth.lookup_name(mac, timeout=BLU_TIMEOUT)
+            if USE_BLE:
+                result = False
+                for ble_device in ble_devices:
+                    result = ble_device[0].upper() == mac
+                    if result:
+                        break
+            else:
+                result = bluetooth.lookup_name(mac, timeout=BLU_TIMEOUT)
             if result:
                 device['state'] = "home"
                 logging.debug("Device Found!")

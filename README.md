@@ -17,11 +17,15 @@ This is useful if you have a bunch of Pi's around the home anyway, and want to i
 ### Requirements
 On the hardware side of things, make sure bluetooth is working.
 
-On the software side, you need to install the following;
+On the software side, you need to install the following:
 ```bash
-$ sudo apt install bluetooth libbluetooth-dev
-$ pip3 install pybluez
-$ pip3 install paho-mqtt
+sudo apt install bluetooth libbluetooth-dev
+pip3 install pybluez paho-mqtt
+```
+If you want to use Bluetooth LE discovery, you need those too (and run the previous pip3 command as root via `sudo`):
+```bash
+sudo apt install pkg-config libboost-python-dev libboost-thread-dev libglib2.0-dev python-dev
+sudo pip3 install gattlib
 ```
 
 ### Update Settings
