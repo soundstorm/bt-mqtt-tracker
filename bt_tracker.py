@@ -93,5 +93,4 @@ except KeyboardInterrupt:
 except:
     logging.exception("BLUETOOTH SERVER ERROR")
 
-client.publish("bt_mqtt_tracker/available/%s" % (LOCATION,), "offline", retain=True)
-client.wait_for_publish()
+client.publish("bt_mqtt_tracker/available/%s" % (LOCATION,), "offline", retain=True).wait_for_publish()
