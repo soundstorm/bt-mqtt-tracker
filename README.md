@@ -9,7 +9,7 @@ This is useful if you have a bunch of Pi's around the home anyway, and want to i
     - [Requirements](#requirements)
     - [Update Settings](#update-settings)
     - [(OPTIONAL) Add a service](#optional-add-a-service)
-  - [How to use new Sensor with Home Assistant](#how-to-use-new-sensor-with-home-assistant)
+  - [(OPTIONAL) How to use new Sensor with Home Assistant](#how-to-use-new-sensor-with-home-assistant)
   - [Troubleshooting](#troubleshooting)
 
 ## How to install
@@ -42,11 +42,11 @@ LOCATION = "Bedroom"
 ```
 Based on the above settings, the device topic for mqtt messages will be:
 ```
-HomeAssistant/Presence/Bedroom/Device1
+bt_mqtt_tracker/presence/Bedroom/Device1
 ```
 AND
 ```
-HomeAssistant/Presence/Bedroom/Device2
+bt_mqtt_tracker/presence/Bedroom/Device2
 ```
 
 Next, update the MQTT settings:
@@ -91,17 +91,20 @@ $ sudo systemctl start bttracker.service
 
 ## How to use new Sensor with Home Assistant
 
+The sensors should be discovered automatically.
+You can configure them manually as well.
+
 To add the sensor to Home Assistant use the [MQTT Sensor Component](https://www.home-assistant.io/components/sensor.mqtt/) a sample configuration is below (based on settings above):
 
 ```yaml
 ---
 sensor:
   - platform: mqtt
-    state_topic: "HomeAssistant/Presence/Bedroom/Device1"
+    state_topic: "bt_mqtt_tracker/presence/Bedroom/Device1"
     name: "Device 1 Bedroom Presence"
 
   - platform: mqtt
-    state_topic: "HomeAssistant/Presence/Bedroom/Device2"
+    state_topic: "bt_mqtt_tracker/presence/Bedroom/Device2"
     name: "Device 2 Bedroom Presence"
 
 ```
