@@ -17,8 +17,8 @@ import paho.mqtt.client as mqtt
 
 # Add the name and Mac address of the each device. The name will be used as part of the state topic.
 devices = [
-    {"name": "Device1", "mac": "aa:bb:cc:dd:ee:ff", "state": "not home"},
-    {"name": "Device2", "mac": "aa:bb:cc:dd:ee:f2", "state": "not home"}
+    {"name": "Device1", "mac": "aa:bb:cc:dd:ee:ff"},
+    {"name": "Device2", "mac": "aa:bb:cc:dd:ee:f2"}
     ]
 
 # Provide name of the location where device is (this will form part of the state topic)
@@ -85,16 +85,16 @@ try:
             if USE_BLE:
                 result = False
                 for ble_device in ble_devices:
-                    result = ble_device[0].upper() == mac
+                    result = ble_device.upper() == mac
                     if result:
                         break
             else:
                 result = bluetooth.lookup_name(mac, timeout=BLU_TIMEOUT)
             if result:
-                device['state'] = "home"
+                device['state'] = "ON"
                 logging.debug("Device Found!")
             else:
-                device['state'] = "not home"
+                device['state'] = "OFF"
                 logging.debug("Device Not Found!")
             try:
                 client.publish("bt_mqtt_tracker/presence/" + LOCATION + "/" + device['name'],

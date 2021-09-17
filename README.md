@@ -20,9 +20,9 @@ On the hardware side of things, make sure bluetooth is working.
 On the software side, you need to install the following:
 ```bash
 sudo apt install bluetooth libbluetooth-dev
-pip3 install pybluez paho-mqtt
+sudo pip3 install pybluez paho-mqtt
 ```
-If you want to use Bluetooth LE discovery, you need those too (and run the previous pip3 command as root via `sudo`):
+If you want to use Bluetooth LE discovery, you need those too:
 ```bash
 sudo apt install pkg-config libboost-python-dev libboost-thread-dev libglib2.0-dev python-dev
 sudo pip3 install gattlib
@@ -36,8 +36,8 @@ Add your devices as per below. Note that these will form part of the state topic
 
 ```python
 devices = [
-    {"name": "Device1", "mac": "aa:bb:cc:dd:ee:ff", "state": "not home"},
-    {"name": "Device2", "mac": "aa:bb:cc:dd:ee:f2", "state": "not home"}
+    {"name": "Device1", "mac": "aa:bb:cc:dd:ee:ff"},
+    {"name": "Device2", "mac": "aa:bb:cc:dd:ee:f2"}
     ]
 ```
 Also, provide a location for your device by changing the location variable:
@@ -77,7 +77,7 @@ After=network.target
 
 [Service]
 Type=idle
-User=pi
+User=root
 ExecStart=/usr/bin/python3 /home/pi/bt-mqtt-tracker/bt_tracker.py
 Restart=always
 
