@@ -63,12 +63,12 @@ client.will_set("bt_mqtt_tracker/available/%s" % (LOCATION,), "offline", retain=
 
 logging.info("Announce devices to HomeAssistant")
 for device in devices:
-  mac_short = device['mac'].replace(':','').lower()
-  client.publish(
-    "homeassistant/binary_sensor/bt_tracker_%s_%s/config" % (LOCATION, device['name']),
-    '{"stat_t":"bt_mqtt_tracker/presence/%s/%s", "avty_t": "bt_mqtt_tracker/available/%s", "name": "%s", "dev":{"ids":"%s","cns": [["mac", "%s"]], "name": "%s", "mf": "BT MQTT Tracker", "mdl": "%s", "sw": "%s"}, "uniq_id": "%s_%s", "dev_cla": "presence"}' % (LOCATION, device['name'], LOCATION, device['name'], mac_short, device['mac'], device['name'], socket.gethostname(), VERSION, LOCATION, mac_short),
-    retain=True
-  )
+    mac_short = device['mac'].replace(':','').lower()
+    client.publish(
+        "homeassistant/binary_sensor/bt_tracker_%s_%s/config" % (LOCATION, device['name']),
+        '{"stat_t":"bt_mqtt_tracker/presence/%s/%s", "avty_t": "bt_mqtt_tracker/available/%s", "name": "%s", "dev":{"ids":"%s","cns": [["mac", "%s"]], "name": "%s", "mf": "BT MQTT Tracker", "mdl": "%s", "sw": "%s"}, "uniq_id": "%s_%s", "dev_cla": "presence"}' % (LOCATION, device['name'], LOCATION, device['name'], mac_short, device['mac'], device['name'], socket.gethostname(), VERSION, LOCATION, mac_short),
+        retain=True
+    )
 
 logging.info("Set Tracker as available")
 client.publish("bt_mqtt_tracker/available/%s" % (LOCATION,), "online", retain=True)
