@@ -2,7 +2,7 @@
 #
 #   Bluetooth Device Tracking MQTT Client for Raspberry Pi (or others)
 #
-#   Version:    2.1
+#   Version:    3.0
 #   Status:     Working
 #   Github:     https://github.com/robmarkoski/bt-mqtt-tracker
 #
@@ -13,6 +13,7 @@ import logging
 import socket
 
 import bluetooth
+import paho.mqtt.publish as publish
 import paho.mqtt.client as mqtt
 
 # Add the name and Mac address of the each device. The name will be used as part of the state topic.
@@ -27,7 +28,7 @@ LOCATION = "Location"
 # Update the follow MQTT Settings for your system.
 MQTT_USER = "mqtt"              # MQTT Username
 MQTT_PASS = "mqtt_password"     # MQTT Password
-MQTT_CLIENT_ID = "bttracker"    # MQTT Client Id
+MQTT_CLIENT_ID = "bt_mqtt_tracker_%s" % (LOCATION,) # MQTT Client Id
 MQTT_HOST_IP = "127.0.0.1"      # MQTT HOST
 MQTT_PORT = 1883                # MQTT PORT (DEFAULT 1883)
 
@@ -40,9 +41,13 @@ BLU_TIMEOUT = 3 # How long during scan before there is a timeout.
 LOG_NAME = "bt_tracker.log"      # Name of log file
 LOG_LEVEL = logging.NOTSET       # Change to DEBUG for debugging. INFO For basic Logging or NOTSET to turn off
 
+MQTT_AUTH = {
+    'username': MQTT_USER,
+    'password': MQTT_PASS
+}
 
 # SHOULDNT NEED TO CHANGE BELOW
-VERSION = "2.1"
+VERSION = "3.0"
 LOG_FORMAT = "%(asctime)-15s %(message)s"
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__)) + "/"
 LOG_FILE = SCRIPT_DIR + LOG_NAME
@@ -55,63 +60,44 @@ if USE_BLE:
     from bluetooth.ble import DiscoveryService
     ble_service = DiscoveryService()
 
-is_connected = False
-def on_connect(client, userdata, flags, rc):
-    global is_connected
-    is_connected = True
-
-def on_disconnect(client, userdata, flags, rc):
-    global is_connected
-    is_connected = False
-
-def do_connect():
-    global client
-    client.connect(MQTT_HOST_IP, port=MQTT_PORT, keepalive=SCAN_TIME*2)
-    client.will_set("bt_mqtt_tracker/available/%s" % (LOCATION,), "offline", retain=True)
-    client.loop_start()
-
-client = mqtt.Client("bt_mqtt_tracker_%s" % (LOCATION,))
-client.on_connect = on_connect
-client.on_disconnect = on_disconnect
-client.username_pw_set(MQTT_USER, MQTT_PASS)
-logging.info("Trying to connect to MQTT Broker")
-while not is_connected:
-    do_connect()
-    if not is_connected:
-        time.sleep(1)
-logging.info("Connected to MQTT Broker")
-
 logging.info("Announce devices to HomeAssistant")
 for device in devices:
     mac_short = device['mac'].replace(':','').lower()
-    client.publish(
-        "homeassistant/binary_sensor/bt_tracker_%s_%s/config" % (LOCATION, device['name']),
-        '{"stat_t":"bt_mqtt_tracker/presence/%s/%s", "avty_t": "bt_mqtt_tracker/available/%s", "name": "%s", "dev":{"ids":"%s","cns": [["mac", "%s"]], "name": "%s", "mf": "BT MQTT Tracker", "mdl": "%s", "sw": "%s"}, "uniq_id": "%s_%s", "dev_cla": "presence"}' % (LOCATION, device['name'], LOCATION, device['name'], mac_short, device['mac'], device['name'], socket.gethostname(), VERSION, LOCATION, mac_short),
-        retain=True
-    )
+    publish.single("homeassistant/binary_sensor/bt_tracker_%s_%s/config" % (LOCATION, device['name']),
+        payload=    '{"stat_t":"bt_mqtt_tracker/presence/%s/%s", "avty_t": "bt_mqtt_tracker/available/%s", "name": "%s", "dev":{"ids":"%s","cns": [["mac", "%s"]], "name": "%s", "mf": "BT MQTT Tracker", "mdl": "%s", "sw": "%s"}, "uniq_id": "%s_%s", "dev_cla": "presence"}' % (LOCATION, device['name'], LOCATION, device['name'], mac_short, device['mac'], device['name'], socket.gethostname(), VERSION, LOCATION, mac_short),
+        retain=True,
+        hostname=MQTT_HOST_IP,
+        client_id=MQTT_CLIENT_ID,
+        auth=MQTT_AUTH,
+        port=MQTT_PORT,
+        protocol=mqtt.MQTTv311)
 
 logging.info("Set Tracker as available")
-client.publish("bt_mqtt_tracker/available/%s" % (LOCATION,), "online", retain=True)
-
+publish.single("bt_mqtt_tracker/available/%s" % (LOCATION,),
+    payload="online",
+    retain=True,
+    hostname=MQTT_HOST_IP,
+    client_id=MQTT_CLIENT_ID,
+    auth=MQTT_AUTH,
+    port=MQTT_PORT,
+    protocol=mqtt.MQTTv311)
 
 try:
     logging.info("Starting BLE Tracker Server")
     while True:
         if not is_connected:
             # Try to reconnect
-            client.connect(MQTT_HOST_IP, port=MQTT_PORT, keepalive=SCAN_TIME*2)
-        # Announce as online, just in case
-        client.publish("bt_mqtt_tracker/available/%s" % (LOCATION,), "online", retain=True)
-        
         if USE_BLE:
             ble_devices = ble_service.discover(BLU_TIMEOUT)
+            ble_devices = ble_service.discover(2)
         for device in devices:
             mac = device['mac'].upper()
             logging.debug("Checking for {}".format(mac))
+            result = False
             if USE_BLE:
                 result = False
-                for ble_device in ble_devices:
-                    result = ble_device.upper() == mac
+                for address, name in ble_devices.items():
+                    result = address.upper() == mac
                     if result:
                         break
             else:
@@ -123,8 +109,13 @@ try:
                 device['state'] = "OFF"
                 logging.debug("Device Not Found!")
             try:
-                client.publish("bt_mqtt_tracker/presence/" + LOCATION + "/" + device['name'],
+                publish.single("bt_mqtt_tracker/presence/%s/%s", (LOCATION, device['name']),
                     payload=device['state'],
+                    hostname=MQTT_HOST_IP,
+                    client_id=MQTT_CLIENT_ID,
+                    auth=MQTT_AUTH,
+                    port=MQTT_PORT,
+                    protocol=mqtt.MQTTv311
                 )
             except:
                 logging.exception("MQTT Publish Error")
@@ -134,4 +125,11 @@ except KeyboardInterrupt:
 except:
     logging.exception("BLUETOOTH SERVER ERROR")
 
-client.publish("bt_mqtt_tracker/available/%s" % (LOCATION,), "offline", retain=True).wait_for_publish()
+publish.single("bt_mqtt_tracker/available/%s" % (LOCATION,),
+    payload="offline",
+    retain=True,
+    hostname=MQTT_HOST_IP,
+    client_id=MQTT_CLIENT_ID,
+    auth=MQTT_AUTH,
+    port=MQTT_PORT,
+    protocol=mqtt.MQTTv311)
