@@ -61,8 +61,10 @@ def on_connect(client, userdata, flags, rc):
     is_connected = True
 
 def on_disconnect(client, userdata, flags, rc):
+    global is_connected
     is_connected = False
 
+def do_connect():
     global client
     client.connect(MQTT_HOST_IP, port=MQTT_PORT, keepalive=SCAN_TIME*2)
     client.will_set("bt_mqtt_tracker/available/%s" % (LOCATION,), "offline", retain=True)
@@ -72,9 +74,10 @@ client = mqtt.Client("bt_mqtt_tracker_%s" % (LOCATION,))
 client.on_connect = on_connect
 client.on_disconnect = on_disconnect
 client.username_pw_set(MQTT_USER, MQTT_PASS)
-client.connect(MQTT_HOST_IP, port=MQTT_PORT, keepalive=SCAN_TIME*2)
-client.loop_start()
-client.will_set("bt_mqtt_tracker/available/%s" % (LOCATION,), "offline", retain=True)
+logging.info("Trying to connect to MQTT Broker")
+while not is_connected:
+    do_connect()
+    if not is_connected:
         time.sleep(1)
 logging.info("Connected to MQTT Broker")
 
@@ -94,6 +97,12 @@ client.publish("bt_mqtt_tracker/available/%s" % (LOCATION,), "online", retain=Tr
 try:
     logging.info("Starting BLE Tracker Server")
     while True:
+        if not is_connected:
+            # Try to reconnect
+            client.connect(MQTT_HOST_IP, port=MQTT_PORT, keepalive=SCAN_TIME*2)
+        # Announce as online, just in case
+        client.publish("bt_mqtt_tracker/available/%s" % (LOCATION,), "online", retain=True)
+        
         if USE_BLE:
             ble_devices = ble_service.discover(BLU_TIMEOUT)
         for device in devices:
