@@ -2,7 +2,7 @@
 #
 #   Bluetooth Device Tracking MQTT Client for Raspberry Pi (or others)
 #
-#   Version:    2.0
+#   Version:    2.1
 #   Status:     Working
 #   Github:     https://github.com/robmarkoski/bt-mqtt-tracker
 #
@@ -42,7 +42,7 @@ LOG_LEVEL = logging.NOTSET       # Change to DEBUG for debugging. INFO For basic
 
 
 # SHOULDNT NEED TO CHANGE BELOW
-VERSION = "2.0"
+VERSION = "2.1"
 LOG_FORMAT = "%(asctime)-15s %(message)s"
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__)) + "/"
 LOG_FILE = SCRIPT_DIR + LOG_NAME
