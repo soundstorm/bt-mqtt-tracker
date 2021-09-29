@@ -85,17 +85,13 @@ publish.single("bt_mqtt_tracker/available/%s" % (LOCATION,),
 try:
     logging.info("Starting BLE Tracker Server")
     while True:
-        if not is_connected:
-            # Try to reconnect
         if USE_BLE:
-            ble_devices = ble_service.discover(BLU_TIMEOUT)
             ble_devices = ble_service.discover(2)
         for device in devices:
             mac = device['mac'].upper()
             logging.debug("Checking for {}".format(mac))
             result = False
             if USE_BLE:
-                result = False
                 for address, name in ble_devices.items():
                     result = address.upper() == mac
                     if result:
