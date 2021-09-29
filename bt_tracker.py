@@ -55,11 +55,28 @@ if USE_BLE:
     from bluetooth.ble import DiscoveryService
     ble_service = DiscoveryService()
 
+is_connected = False
+def on_connect(client, userdata, flags, rc):
+    global is_connected
+    is_connected = True
+
+def on_disconnect(client, userdata, flags, rc):
+    is_connected = False
+
+    global client
+    client.connect(MQTT_HOST_IP, port=MQTT_PORT, keepalive=SCAN_TIME*2)
+    client.will_set("bt_mqtt_tracker/available/%s" % (LOCATION,), "offline", retain=True)
+    client.loop_start()
+
 client = mqtt.Client("bt_mqtt_tracker_%s" % (LOCATION,))
+client.on_connect = on_connect
+client.on_disconnect = on_disconnect
 client.username_pw_set(MQTT_USER, MQTT_PASS)
 client.connect(MQTT_HOST_IP, port=MQTT_PORT, keepalive=SCAN_TIME*2)
 client.loop_start()
 client.will_set("bt_mqtt_tracker/available/%s" % (LOCATION,), "offline", retain=True)
+        time.sleep(1)
+logging.info("Connected to MQTT Broker")
 
 logging.info("Announce devices to HomeAssistant")
 for device in devices:
